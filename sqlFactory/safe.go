@@ -172,6 +172,70 @@ func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, param
 	return sql, paramsResult, countStr
 }
 
+func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
+	var paramsResult []interface{}
+	sql := "SELECT * FROM " + tbl + " WHERE "
+	ov := reflect.ValueOf(o)
+	ot := reflect.TypeOf(o)
+	var DTO reflect.Value
+	for i := 0; i < ot.NumField(); i++ {
+		if ot.Field(i).Name != "PageInfo" {
+			DTO = ov.Field(i)
+		}
+	}
+	PageInfo := ov.FieldByName("PageInfo")
+	dt := DTO.Type()
+	for i := 0; i < dt.NumField(); i++ {
+		tagName := dt.Field(i).Tag.Get(Tag)
+		if tagName == "id" || containArray(tagName, tags) {
+			continue
+		}
+		switch DTO.Field(i).Kind() {
+		case reflect.Int:
+			if DTO.Field(i).Int() != 0 {
+				sql += tagName + "=? " + " AND "
+				paramsResult = append(paramsResult, strconv.FormatInt(DTO.Field(i).Int(), 10))
+			}
+		case reflect.String:
+			if DTO.Field(i).String() != "" {
+				sql += tagName + " like ?" + " AND "
+				paramsResult = append(paramsResult, "%"+DTO.Field(i).String()+"%")
+			}
+		case reflect.Float64:
+			if DTO.Field(i).Float() != 0 {
+				value := strconv.FormatFloat(DTO.Field(i).Float(), 'g', 15, 64)
+				sql += tagName + "=? AND "
+				paramsResult = append(paramsResult, value)
+			}
+		}
+	}
+	if PageInfo.FieldByName("CreateUserId").Int() != 0 {
+		sql += "create_user_id" + "=?" + " AND "
+		paramsResult = append(paramsResult, strconv.FormatInt(PageInfo.FieldByName("CreateUserId").Int(), 10))
+	}
+	if strings.Contains(sql, "AND") {
+		sql = sql[:strings.LastIndex(sql, "AND")]
+	} else {
+		sql += "1=1"
+	}
+	field := "id"
+	if strings.TrimSpace(orderField) != "" {
+		field = orderField
+	}
+	if desc {
+		sql += " order by " + field + " desc "
+	} else {
+		sql += " order by " + field
+	}
+	countStr := strings.ReplaceAll(sql, "*", " COUNT(1) as total ")
+	page := PageInfo.FieldByName("Page").Int()
+	pageSize := PageInfo.FieldByName("PageSize").Int()
+	if page > 0 && pageSize > 0 {
+		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
+	}
+	return sql, paramsResult, countStr
+}
+
 // SafeSelectWithFactor 安全的可手动介入查询条件的查询语句生成
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
@@ -222,6 +286,73 @@ func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...s
 		sql = sql[:strings.LastIndex(sql, "AND")]
 	} else {
 		sql += "1=1"
+	}
+	countStr := strings.ReplaceAll(sql, "*", " COUNT(1) as total ")
+	page := PageInfo.FieldByName("Page").Int()
+	pageSize := PageInfo.FieldByName("PageSize").Int()
+	if page > 0 && pageSize > 0 {
+		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
+	}
+	return sql, paramsResult, countStr
+}
+
+func SafeSelectWithFactorOrder(o interface{}, tbl string, desc bool, orderField string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
+	var paramsResult []interface{}
+	sql := "SELECT * FROM " + tbl + " WHERE "
+	ov := reflect.ValueOf(o)
+	ot := reflect.TypeOf(o)
+	var DTO reflect.Value
+	for i := 0; i < ot.NumField(); i++ {
+		if ot.Field(i).Name != "PageInfo" {
+			DTO = ov.Field(i)
+		}
+	}
+	PageInfo := ov.FieldByName("PageInfo")
+	dt := DTO.Type()
+	for i := 0; i < dt.NumField(); i++ {
+		tagName := dt.Field(i).Tag.Get(Tag)
+		if tagName == "id" || containArray(tagName, tags) {
+			continue
+		}
+		switch DTO.Field(i).Kind() {
+		case reflect.Int:
+			if DTO.Field(i).Int() != 0 {
+				sql += tagName + "=? " + " AND "
+				paramsResult = append(paramsResult, strconv.FormatInt(DTO.Field(i).Int(), 10))
+			}
+		case reflect.String:
+			if DTO.Field(i).String() != "" {
+				sql += tagName + " like ?" + " AND "
+				paramsResult = append(paramsResult, "%"+DTO.Field(i).String()+"%")
+			}
+		case reflect.Float64:
+			if DTO.Field(i).Float() != 0 {
+				value := strconv.FormatFloat(DTO.Field(i).Float(), 'g', 15, 64)
+				sql += tagName + "=? AND "
+				paramsResult = append(paramsResult, value)
+			}
+		}
+	}
+	if PageInfo.FieldByName("CreateUserId").Int() != 0 {
+		sql += "create_user_id" + "=?" + " AND "
+		paramsResult = append(paramsResult, strconv.FormatInt(PageInfo.FieldByName("CreateUserId").Int(), 10))
+	}
+	for i := 0; i < len(factors) && strings.TrimSpace(factors[i]) != ""; i++ {
+		sql += fmt.Sprintf(" %s AND ", factors[i])
+	}
+	if strings.Contains(sql, "AND") {
+		sql = sql[:strings.LastIndex(sql, "AND")]
+	} else {
+		sql += "1=1"
+	}
+	field := "id"
+	if strings.TrimSpace(orderField) != "" {
+		field = orderField
+	}
+	if desc {
+		sql += " order by " + field + " desc "
+	} else {
+		sql += " order by " + field
 	}
 	countStr := strings.ReplaceAll(sql, "*", " COUNT(1) as total ")
 	page := PageInfo.FieldByName("Page").Int()

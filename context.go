@@ -15,15 +15,31 @@ type SqlxP struct {
 func (s *SqlxP) Select(dest interface{}, request interface{}, table string, tags ...string) (err error, total int) {
 	str, params, countStr := SafeSelect(request, table, tags...)
 	err = s.DB.Select(dest, str, params...)
-	s.DB.Get(&total, countStr)
+	s.DB.Get(&total, countStr, params...)
 	return
 }
 
-// SelectWithFactor 可手动介入查询条件的列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, factors 为sql条件, tags为需要跳过的字段
-func (s *SqlxP) SelectWithFactor(dest interface{}, request interface{}, table string, factors []string, tags ...string) (err error, total int) {
+// SelectWF 可手动介入查询条件的列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, factors 为sql条件, tags为需要跳过的字段
+func (s *SqlxP) SelectWF(dest interface{}, request interface{}, table string, factors []string, tags ...string) (err error, total int) {
 	str, params, countStr := SafeSelectWithFactor(request, table, factors, tags...)
 	err = s.DB.Select(dest, str, params...)
-	s.DB.Get(&total, countStr)
+	s.DB.Get(&total, countStr, params...)
+	return
+}
+
+// SelectOrder 列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, tags为需要跳过的字段
+func (s *SqlxP) SelectOrder(dest interface{}, request interface{}, desc bool, orderField string, table string, tags ...string) (err error, total int) {
+	str, params, countStr := SafeSelectOrder(request, table, desc, orderField, tags...)
+	err = s.DB.Select(dest, str, params...)
+	s.DB.Get(&total, countStr, params...)
+	return
+}
+
+// SelectWFOrder 可手动介入查询条件的列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, factors 为sql条件, tags为需要跳过的字段
+func (s *SqlxP) SelectWFOrder(dest interface{}, request interface{}, desc bool, orderField string, table string, factors []string, tags ...string) (err error, total int) {
+	str, params, countStr := SafeSelectWithFactorOrder(request, table, desc, orderField, factors, tags...)
+	err = s.DB.Select(dest, str, params...)
+	s.DB.Get(&total, countStr, params...)
 	return
 }
 
