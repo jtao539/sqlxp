@@ -117,7 +117,7 @@ func safeLocalUpdate(o interface{}, a interface{}, tbl string, fs ...func(tagNam
 
 // SafeSelect 安全条件查询语句生成(采用参数化查询，未直接拼接SQL语句), o 为DTO, a 为entity tbl 为表名称, tags为手动跳过的查找字段
 // 返回值为带占位符的SQL以及对应的参数数组
-func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, params []interface{}) {
+func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
 	sql := "SELECT * FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
@@ -163,17 +163,18 @@ func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, param
 	} else {
 		sql += "1=1"
 	}
+	countStr := strings.ReplaceAll(sql, "*", " COUNT(1) as total ")
 	page := PageInfo.FieldByName("Page").Int()
 	pageSize := PageInfo.FieldByName("PageSize").Int()
 	if page > 0 && pageSize > 0 {
 		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
 	}
-	return sql, paramsResult
+	return sql, paramsResult, countStr
 }
 
 // SafeSelectWithFactor 安全的可手动介入查询条件的查询语句生成
 // 返回值为带占位符的SQL以及对应的参数数组
-func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...string) (sqlStr string, params []interface{}) {
+func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
 	sql := "SELECT * FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
@@ -222,10 +223,11 @@ func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...s
 	} else {
 		sql += "1=1"
 	}
+	countStr := strings.ReplaceAll(sql, "*", " COUNT(1) as total ")
 	page := PageInfo.FieldByName("Page").Int()
 	pageSize := PageInfo.FieldByName("PageSize").Int()
 	if page > 0 && pageSize > 0 {
 		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
 	}
-	return sql, paramsResult
+	return sql, paramsResult, countStr
 }

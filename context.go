@@ -12,17 +12,19 @@ type SqlxP struct {
 }
 
 // Select 列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, tags为需要跳过的字段
-func (s *SqlxP) Select(dest interface{}, request interface{}, table string, tags ...string) error {
-	str, params := SafeSelect(request, table, tags...)
-	err := s.DB.Select(dest, str, params...)
-	return err
+func (s *SqlxP) Select(dest interface{}, request interface{}, table string, tags ...string) (err error, total int) {
+	str, params, countStr := SafeSelect(request, table, tags...)
+	err = s.DB.Select(dest, str, params...)
+	s.DB.Get(&total, countStr)
+	return
 }
 
 // SelectWithFactor 可手动介入查询条件的列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, factors 为sql条件, tags为需要跳过的字段
-func (s *SqlxP) SelectWithFactor(dest interface{}, request interface{}, table string, factors []string, tags ...string) error {
-	str, params := SafeSelectWithFactor(request, table, factors, tags...)
-	err := s.DB.Select(dest, str, params...)
-	return err
+func (s *SqlxP) SelectWithFactor(dest interface{}, request interface{}, table string, factors []string, tags ...string) (err error, total int) {
+	str, params, countStr := SafeSelectWithFactor(request, table, factors, tags...)
+	err = s.DB.Select(dest, str, params...)
+	s.DB.Get(&total, countStr)
+	return
 }
 
 // Update 数据更新, request为新数据的结构体, entity为SQLNULL实体 table 为表名称， 通过对比request和entity获取跳过的字段, tx 为事务支持
