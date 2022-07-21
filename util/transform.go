@@ -3,6 +3,7 @@ package util
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -19,7 +20,31 @@ func N2Basic(a interface{}, b interface{}, tags ...string) {
 	tb := reflect.TypeOf(b)
 	ovb := vb.Elem()
 	otb := tb.Elem()
-	for i := 0; i < ovb.NumField(); i++ {
+	if va.Kind() != reflect.Struct || otb.Kind() != reflect.Struct {
+		log.Panicln("kind is not Struct")
+		return
+	}
+	localN2B(va, ovb, otb, tags...)
+}
+
+func N2BasicList(nList interface{}, bList interface{}, tags ...string) {
+	vNList := reflect.ValueOf(nList)
+	vBList := reflect.ValueOf(bList)
+	if !(vBList.Kind() == reflect.Array || vBList.Kind() == reflect.Slice) || !(vNList.Kind() == reflect.Array || vNList.Kind() == reflect.Slice) {
+		log.Panicln("kind is not Array or Slice")
+		return
+	}
+	for x := 0; x < vBList.Len(); x++ {
+		va := reflect.ValueOf(vNList.Index(x).Interface())
+		vbAddr := reflect.ValueOf(vBList.Index(x).Addr().Interface())
+		tb := reflect.TypeOf(vBList.Index(x).Interface())
+		vb := vbAddr.Elem()
+		localN2B(va, vb, tb, tags...)
+	}
+}
+
+func localN2B(va, ovb reflect.Value, otb reflect.Type, tags ...string) {
+	for i := 0; i < otb.NumField(); i++ {
 		field := otb.Field(i)
 		if tag := field.Tag.Get(TAG); len(tags) > 0 && containArray(tag, tags) {
 			continue
@@ -77,12 +102,31 @@ func Basic2N(a interface{}, b interface{}, tags ...string) {
 	tb := reflect.TypeOf(b)
 	ovb := vb.Elem()
 	otb := tb.Elem()
-	for i := 0; i < ovb.NumField(); i++ {
+	localB2N(va, ovb, otb, tags...)
+}
+
+func Basic2NList(bList interface{}, nList interface{}, tags ...string) {
+	vBList := reflect.ValueOf(bList)
+	vNList := reflect.ValueOf(nList)
+	if !(vBList.Kind() == reflect.Array || vBList.Kind() == reflect.Slice) || !(vNList.Kind() == reflect.Array || vNList.Kind() == reflect.Slice) {
+		log.Panicln("kind is not Array or Slice")
+		return
+	}
+	for x := 0; x < vBList.Len(); x++ {
+		va := reflect.ValueOf(vBList.Index(x).Interface())
+		vbAddr := reflect.ValueOf(vNList.Index(x).Addr().Interface())
+		otb := reflect.TypeOf(vNList.Index(x).Interface())
+		ovb := vbAddr.Elem()
+		localB2N(va, ovb, otb, tags...)
+	}
+}
+
+func localB2N(va, ovb reflect.Value, otb reflect.Type, tags ...string) {
+	for i := 0; ovb.Kind() == reflect.Struct && i < ovb.NumField(); i++ {
 		field := otb.Field(i)
 		if tag := field.Tag.Get(TAG); len(tags) > 0 && containArray(tag, tags) {
 			continue
 		}
-		/*if ovb.Field(i).Kind() == reflect.Struct {*/
 		fieldA := va.FieldByName(field.Name)
 		switch fieldA.Kind() {
 		case reflect.String:
