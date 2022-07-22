@@ -7,6 +7,8 @@ import (
 	. "github.com/jtao539/sqlxp/sqlFactory"
 )
 
+// finished by JiangTao in 2022.07
+
 type SqlxP struct {
 	DB *sqlx.DB
 }

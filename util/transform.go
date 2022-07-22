@@ -9,7 +9,7 @@ import (
 )
 
 // 用于sqlNull类型与基本数据类型转换的工具
-// finish by JiangTao in 2022.07
+// finished by JiangTao in 2022.07
 
 const TAG = "db"
 
