@@ -34,7 +34,7 @@ func SafeInsert(o interface{}, tbl string) string {
 // 返回值包含带占位符的sql和参数数组
 func SafeUpdate(o interface{}, a interface{}, tbl string) (string, []interface{}) {
 	return safeLocalUpdate(o, a, tbl, func(tagName string) bool {
-		return contain(tagName, "id", "code", "status")
+		return contain(tagName, "id")
 	})
 }
 
@@ -44,7 +44,7 @@ func SafeUpdateP(o interface{}, a interface{}, tbl string, args ...string) (stri
 	return safeLocalUpdate(o, a, tbl, func(tagName string) bool {
 		return containArray(tagName, args)
 	}, func(tagName string) bool {
-		return contain(tagName, "id", "code", "status")
+		return contain(tagName, "id")
 	})
 }
 
@@ -132,7 +132,7 @@ func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, param
 	dt := DTO.Type()
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
-		if tagName == "id" || containArray(tagName, tags) {
+		if containArray(tagName, tags) {
 			continue
 		}
 		switch DTO.Field(i).Kind() {
@@ -153,10 +153,6 @@ func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, param
 				paramsResult = append(paramsResult, value)
 			}
 		}
-	}
-	if PageInfo.FieldByName("CreateUserId").Int() != 0 {
-		sql += "create_user_id" + "=?" + " AND "
-		paramsResult = append(paramsResult, strconv.FormatInt(PageInfo.FieldByName("CreateUserId").Int(), 10))
 	}
 	if strings.Contains(sql, "AND") {
 		sql = sql[:strings.LastIndex(sql, "AND")]
@@ -187,7 +183,7 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 	dt := DTO.Type()
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
-		if tagName == "id" || containArray(tagName, tags) {
+		if containArray(tagName, tags) {
 			continue
 		}
 		switch DTO.Field(i).Kind() {
@@ -208,10 +204,6 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 				paramsResult = append(paramsResult, value)
 			}
 		}
-	}
-	if PageInfo.FieldByName("CreateUserId").Int() != 0 {
-		sql += "create_user_id" + "=?" + " AND "
-		paramsResult = append(paramsResult, strconv.FormatInt(PageInfo.FieldByName("CreateUserId").Int(), 10))
 	}
 	if strings.Contains(sql, "AND") {
 		sql = sql[:strings.LastIndex(sql, "AND")]
@@ -253,7 +245,7 @@ func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...s
 	dt := DTO.Type()
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
-		if tagName == "id" || containArray(tagName, tags) {
+		if containArray(tagName, tags) {
 			continue
 		}
 		switch DTO.Field(i).Kind() {
@@ -274,10 +266,6 @@ func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...s
 				paramsResult = append(paramsResult, value)
 			}
 		}
-	}
-	if PageInfo.FieldByName("CreateUserId").Int() != 0 {
-		sql += "create_user_id" + "=?" + " AND "
-		paramsResult = append(paramsResult, strconv.FormatInt(PageInfo.FieldByName("CreateUserId").Int(), 10))
 	}
 	for i := 0; i < len(factors) && strings.TrimSpace(factors[i]) != ""; i++ {
 		sql += fmt.Sprintf(" %s AND ", factors[i])
@@ -311,7 +299,7 @@ func SafeSelectWithFactorOrder(o interface{}, tbl string, desc bool, orderField 
 	dt := DTO.Type()
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
-		if tagName == "id" || containArray(tagName, tags) {
+		if containArray(tagName, tags) {
 			continue
 		}
 		switch DTO.Field(i).Kind() {
@@ -332,10 +320,6 @@ func SafeSelectWithFactorOrder(o interface{}, tbl string, desc bool, orderField 
 				paramsResult = append(paramsResult, value)
 			}
 		}
-	}
-	if PageInfo.FieldByName("CreateUserId").Int() != 0 {
-		sql += "create_user_id" + "=?" + " AND "
-		paramsResult = append(paramsResult, strconv.FormatInt(PageInfo.FieldByName("CreateUserId").Int(), 10))
 	}
 	for i := 0; i < len(factors) && strings.TrimSpace(factors[i]) != ""; i++ {
 		sql += fmt.Sprintf(" %s AND ", factors[i])
