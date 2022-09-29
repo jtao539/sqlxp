@@ -91,6 +91,20 @@ func localN2B(va, ovb reflect.Value, otb reflect.Type, tags ...string) {
 			} else if sValue.Kind() == reflect.Float32 || sValue.Kind() == reflect.Float64 {
 				ovb.FieldByName(field.Name).SetFloat(sValue.Float())
 			}
+		case reflect.Struct:
+			flag := false
+			vta := va.Type()
+			for i := 0; i < vta.NumField(); i++ {
+				if vta.Field(i).Name == field.Name {
+					flag = true
+					break
+				}
+			}
+			if flag {
+				x := ovb.FieldByName(field.Name).Addr().Elem()
+				y := reflect.TypeOf(ovb.FieldByName(field.Name).Addr().Elem().Interface())
+				localN2B(va.FieldByName(field.Name), x, y)
+			}
 		}
 	}
 }
@@ -174,6 +188,10 @@ func localB2N(va, ovb reflect.Value, otb reflect.Type, tags ...string) {
 			} else if ovb.FieldByName(field.Name).Kind() == reflect.Float32 || ovb.FieldByName(field.Name).Kind() == reflect.Float64 {
 				ovb.FieldByName(field.Name).SetFloat(fieldA.Float())
 			}
+		case reflect.Struct:
+			x := ovb.FieldByName(field.Name).Addr().Elem()
+			y := reflect.TypeOf(ovb.FieldByName(field.Name).Addr().Elem().Interface())
+			localB2N(fieldA, x, y)
 		}
 	}
 }
