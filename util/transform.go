@@ -91,6 +91,20 @@ func localN2B(va, ovb reflect.Value, otb reflect.Type, tags ...string) {
 			} else if sValue.Kind() == reflect.Float32 || sValue.Kind() == reflect.Float64 {
 				ovb.FieldByName(field.Name).SetFloat(sValue.Float())
 			}
+		case reflect.Bool:
+			sValue := va.FieldByName(field.Name)
+			if sValue.Kind() == reflect.Struct && sValue.Type().Name() == "NullBool" {
+				for j := 0; j < sValue.NumField(); j++ {
+					if sValue.Type().Field(j).Name == "Valid" && !sValue.Field(j).Bool() {
+						ovb.FieldByName(field.Name).SetBool(false)
+						break
+					} else if sValue.Type().Field(j).Name == "Valid" && sValue.Field(j).Bool() {
+						ovb.FieldByName(field.Name).SetBool(sValue.Field(j).Bool())
+					}
+				}
+			} else if sValue.Kind() == reflect.Bool {
+				ovb.FieldByName(field.Name).SetBool(sValue.Bool())
+			}
 		case reflect.Struct:
 			flag := false
 			vta := va.Type()
@@ -187,6 +201,18 @@ func localB2N(va, ovb reflect.Value, otb reflect.Type, tags ...string) {
 				}
 			} else if ovb.FieldByName(field.Name).Kind() == reflect.Float32 || ovb.FieldByName(field.Name).Kind() == reflect.Float64 {
 				ovb.FieldByName(field.Name).SetFloat(fieldA.Float())
+			}
+		case reflect.Bool:
+			// todo
+			if ovb.FieldByName(field.Name).Kind() == reflect.Struct && ovb.FieldByName(field.Name).Type().Name() == "NullBool" {
+				ovb.FieldByName(field.Name).FieldByName("Bool").SetBool(fieldA.Bool())
+				if fieldA.Bool() == true {
+					ovb.FieldByName(field.Name).FieldByName("Valid").SetBool(true)
+				} else {
+					ovb.FieldByName(field.Name).FieldByName("Valid").SetBool(false)
+				}
+			} else if ovb.FieldByName(field.Name).Kind() == reflect.Bool {
+				ovb.FieldByName(field.Name).SetBool(fieldA.Bool())
 			}
 		case reflect.Struct:
 			x := ovb.FieldByName(field.Name).Addr().Elem()
