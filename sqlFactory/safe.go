@@ -228,6 +228,72 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 	return sql, paramsResult, countStr
 }
 
+// SafeSelectMT 多表查询语句生成(采用参数化查询，未直接拼接SQL语句), o 为DTO, a 为entity tbl 为表名称, otherFiledMap为表字段与sql映射, factors 为条件 tags为手动跳过的查找字段
+// 返回值为带占位符的SQL以及对应的参数数组
+func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
+	var paramsResult []interface{}
+	selectSql := "SELECT * "
+	if len(otherFiledMap) > 0 {
+		selectSql += ","
+		for filed, v := range otherFiledMap {
+			selectSql += fmt.Sprintf(" (%s) as %s ,", v, filed)
+		}
+		if strings.Contains(selectSql, ",") {
+			selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
+		}
+	}
+	sql := "FROM " + tbl + " WHERE "
+	ov := reflect.ValueOf(o)
+	ot := reflect.TypeOf(o)
+	var DTO reflect.Value
+	for i := 0; i < ot.NumField(); i++ {
+		if ot.Field(i).Name != "PageInfo" {
+			DTO = ov.Field(i)
+		}
+	}
+	PageInfo := ov.FieldByName("PageInfo")
+	dt := DTO.Type()
+	for i := 0; i < dt.NumField(); i++ {
+		tagName := dt.Field(i).Tag.Get(Tag)
+		if containArray(tagName, tags) {
+			continue
+		}
+		switch DTO.Field(i).Kind() {
+		case reflect.Int:
+			if DTO.Field(i).Int() != 0 {
+				sql += tagName + "=? " + " AND "
+				paramsResult = append(paramsResult, strconv.FormatInt(DTO.Field(i).Int(), 10))
+			}
+		case reflect.String:
+			if DTO.Field(i).String() != "" {
+				sql += tagName + " like ?" + " AND "
+				paramsResult = append(paramsResult, "%"+DTO.Field(i).String()+"%")
+			}
+		case reflect.Float64:
+			if DTO.Field(i).Float() != 0 {
+				value := strconv.FormatFloat(DTO.Field(i).Float(), 'g', 15, 64)
+				sql += tagName + "=? AND "
+				paramsResult = append(paramsResult, value)
+			}
+		}
+	}
+	for i := 0; i < len(factors) && strings.TrimSpace(factors[i]) != ""; i++ {
+		sql += fmt.Sprintf(" %s AND ", factors[i])
+	}
+	if strings.Contains(sql, "AND") {
+		sql = sql[:strings.LastIndex(sql, "AND")]
+	} else {
+		sql += "1=1"
+	}
+	countStr := "SELECT COUNT(1) as total " + sql
+	page := PageInfo.FieldByName("Page").Int()
+	pageSize := PageInfo.FieldByName("PageSize").Int()
+	if page > 0 && pageSize > 0 {
+		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
+	}
+	return selectSql + sql, paramsResult, countStr
+}
+
 // SafeSelectWithFactor 安全的可手动介入查询条件的查询语句生成
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
