@@ -119,7 +119,6 @@ func safeLocalUpdate(o interface{}, a interface{}, tbl string, fs ...func(tagNam
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
-	sql := "SELECT * FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
 	ot := reflect.TypeOf(o)
 	var DTO reflect.Value
@@ -130,6 +129,18 @@ func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, param
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
+	sql := "SELECT "
+	for i := 0; i < dt.NumField(); i++ {
+		f := dt.Field(i).Tag.Get(Tag)
+		if DTO.Field(i).Kind() == reflect.Struct {
+			continue
+		}
+		sql += f + ","
+	}
+	if strings.Contains(sql, ",") {
+		sql = sql[:strings.LastIndex(sql, ",")]
+	}
+	sql += " FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
 		if containArray(tagName, tags) {
@@ -170,7 +181,6 @@ func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, param
 
 func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
-	sql := "SELECT * FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
 	ot := reflect.TypeOf(o)
 	var DTO reflect.Value
@@ -181,6 +191,18 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
+	sql := "SELECT "
+	for i := 0; i < dt.NumField(); i++ {
+		f := dt.Field(i).Tag.Get(Tag)
+		if DTO.Field(i).Kind() == reflect.Struct {
+			continue
+		}
+		sql += f + ","
+	}
+	if strings.Contains(sql, ",") {
+		sql = sql[:strings.LastIndex(sql, ",")]
+	}
+	sql += " FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
 		if containArray(tagName, tags) {
@@ -232,17 +254,6 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
-	selectSql := "SELECT * "
-	if len(otherFiledMap) > 0 {
-		selectSql += ","
-		for filed, v := range otherFiledMap {
-			selectSql += fmt.Sprintf(" (%s) as %s ,", v, filed)
-		}
-		if strings.Contains(selectSql, ",") {
-			selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
-		}
-	}
-	sql := "FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
 	ot := reflect.TypeOf(o)
 	var DTO reflect.Value
@@ -253,6 +264,24 @@ func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, fa
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
+	selectSql := "SELECT "
+	for i := 0; i < dt.NumField(); i++ {
+		f := dt.Field(i).Tag.Get(Tag)
+		if DTO.Field(i).Kind() == reflect.Struct {
+			continue
+		}
+		selectSql += f + ","
+	}
+	if len(otherFiledMap) > 0 {
+		for filed, v := range otherFiledMap {
+			selectSql += fmt.Sprintf(" (%s) as %s ,", v, filed)
+		}
+		selectSql += ","
+	}
+	if strings.Contains(selectSql, ",") {
+		selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
+	}
+	sql := "FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
 		if containArray(tagName, tags) {
@@ -298,7 +327,6 @@ func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, fa
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
-	sql := "SELECT * FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
 	ot := reflect.TypeOf(o)
 	var DTO reflect.Value
@@ -309,6 +337,18 @@ func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...s
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
+	sql := "SELECT "
+	for i := 0; i < dt.NumField(); i++ {
+		f := dt.Field(i).Tag.Get(Tag)
+		if DTO.Field(i).Kind() == reflect.Struct {
+			continue
+		}
+		sql += f + ","
+	}
+	if strings.Contains(sql, ",") {
+		sql = sql[:strings.LastIndex(sql, ",")]
+	}
+	sql += " FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
 		if containArray(tagName, tags) {
@@ -352,7 +392,6 @@ func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...s
 
 func SafeSelectWithFactorOrder(o interface{}, tbl string, desc bool, orderField string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
-	sql := "SELECT * FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
 	ot := reflect.TypeOf(o)
 	var DTO reflect.Value
@@ -363,6 +402,18 @@ func SafeSelectWithFactorOrder(o interface{}, tbl string, desc bool, orderField 
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
+	sql := "SELECT "
+	for i := 0; i < dt.NumField(); i++ {
+		f := dt.Field(i).Tag.Get(Tag)
+		if DTO.Field(i).Kind() == reflect.Struct {
+			continue
+		}
+		sql += f + ","
+	}
+	if strings.Contains(sql, ",") {
+		sql = sql[:strings.LastIndex(sql, ",")]
+	}
+	sql += " FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
 		if containArray(tagName, tags) {
