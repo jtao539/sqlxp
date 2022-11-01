@@ -252,7 +252,7 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 
 // SafeSelectMT 多表查询语句生成(采用参数化查询，未直接拼接SQL语句), o 为DTO, a 为entity tbl 为表名称, otherFiledMap为表字段与sql映射, factors 为条件 tags为手动跳过的查找字段
 // 返回值为带占位符的SQL以及对应的参数数组
-func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
+func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, factors []string, desc bool, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
 	ov := reflect.ValueOf(o)
 	ot := reflect.TypeOf(o)
@@ -313,6 +313,11 @@ func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, fa
 		sql = sql[:strings.LastIndex(sql, "AND")]
 	} else {
 		sql += "1=1"
+	}
+	if desc {
+		sql += " order by " + "id" + " desc "
+	} else {
+		sql += " order by id  "
 	}
 	countStr := "SELECT COUNT(1) as total " + sql
 	page := PageInfo.FieldByName("Page").Int()
