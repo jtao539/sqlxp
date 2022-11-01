@@ -254,6 +254,17 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, factors []string, desc bool, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
+	selectSql := "SELECT * "
+	if len(otherFiledMap) > 0 {
+		selectSql += ","
+		for filed, v := range otherFiledMap {
+			selectSql += fmt.Sprintf(" (%s) as %s ,", v, filed)
+		}
+		if strings.Contains(selectSql, ",") {
+			selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
+		}
+	}
+	sql := "FROM " + tbl + " WHERE "
 	ov := reflect.ValueOf(o)
 	ot := reflect.TypeOf(o)
 	var DTO reflect.Value
@@ -264,24 +275,6 @@ func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, fa
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
-	selectSql := "SELECT "
-	for i := 0; i < dt.NumField(); i++ {
-		f := dt.Field(i).Tag.Get(Tag)
-		if DTO.Field(i).Kind() == reflect.Struct {
-			continue
-		}
-		selectSql += f + ","
-	}
-	if len(otherFiledMap) > 0 {
-		for filed, v := range otherFiledMap {
-			selectSql += fmt.Sprintf(" (%s) as %s ,", v, filed)
-		}
-		selectSql += ","
-	}
-	if strings.Contains(selectSql, ",") {
-		selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
-	}
-	sql := "FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
 		if containArray(tagName, tags) {
