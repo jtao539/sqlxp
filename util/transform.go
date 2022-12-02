@@ -2,7 +2,6 @@ package util
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"reflect"
 	"strings"
@@ -230,15 +229,13 @@ func StringToNullString(a string) sql.NullString {
 	return sql.NullString{String: a, Valid: true}
 }
 
-func anythingToSlice(a interface{}) []interface{} {
+func AnythingToSlice(a interface{}) []interface{} {
 	v := reflect.ValueOf(a)
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
 		result := make([]interface{}, v.Len())
 		for i := 0; i < v.Len(); i++ {
 			result[i] = v.Index(i).Interface()
-			t := reflect.TypeOf(result[i])
-			fmt.Println("t = ", t)
 		}
 		return result
 	default:
