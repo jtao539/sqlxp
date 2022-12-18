@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"github.com/jtao539/sqlxp/model"
 	. "github.com/jtao539/sqlxp/sqlFactory"
 )
 
@@ -11,6 +12,13 @@ import (
 
 type SqlxP struct {
 	DB *sqlx.DB
+}
+
+// PageInfo Paging common input parameter structure(use in select)
+type PageInfo struct {
+	Page     int `json:"page" form:"page"`           // 页码
+	PageSize int `json:"page_size" form:"page_size"` // 每页大小
+	model.SelectParams
 }
 
 // Select 列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, tags为需要跳过的字段
