@@ -130,17 +130,7 @@ func SafeSelect(o interface{}, tbl string, tags ...string) (sqlStr string, param
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
-	sql := "SELECT "
-	for i := 0; i < dt.NumField(); i++ {
-		f := dt.Field(i).Tag.Get(Tag)
-		if DTO.Field(i).Kind() == reflect.Struct {
-			continue
-		}
-		sql += f + ","
-	}
-	if strings.Contains(sql, ",") {
-		sql = sql[:strings.LastIndex(sql, ",")]
-	}
+	sql := "SELECT *"
 	sql += " FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
@@ -192,17 +182,7 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 	}
 	PageInfo := ov.FieldByName("PageInfo")
 	dt := DTO.Type()
-	sql := "SELECT "
-	for i := 0; i < dt.NumField(); i++ {
-		f := dt.Field(i).Tag.Get(Tag)
-		if DTO.Field(i).Kind() == reflect.Struct {
-			continue
-		}
-		sql += f + ","
-	}
-	if strings.Contains(sql, ",") {
-		sql = sql[:strings.LastIndex(sql, ",")]
-	}
+	sql := "SELECT *"
 	sql += " FROM " + tbl + " WHERE "
 	for i := 0; i < dt.NumField(); i++ {
 		tagName := dt.Field(i).Tag.Get(Tag)
