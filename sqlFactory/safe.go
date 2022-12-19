@@ -380,6 +380,108 @@ func SafeSelectMTP(o interface{}, tbl string, otherFiledMap map[string]string, f
 	return selectSql + sql, paramsResult, countStr
 }
 
+// SafeSelectP [更加安全-防止sql注入] 多表查询语句生成(采用参数化查询，未直接拼接SQL语句), o 为DTO, a 为entity tbl 为表名称, otherFiledMap为表字段与sql映射, factorsMap 为条件和参数的map tags为手动跳过的查找字段
+// 返回值为带占位符的SQL以及对应的参数数组
+func SafeSelectP(o interface{}, tbl string, desc bool, tags ...string) (sqlStr string, params []interface{}, countSql string) {
+	var paramsResult []interface{}
+	selectSql := "SELECT * "
+	ov := reflect.ValueOf(o)
+	PageInfo := ov.FieldByName("PageInfo")
+	fieldsMap := PageInfo.FieldByName("fieldsMap")
+	fieldsR := fieldsMap.MapRange()
+	for fieldsR.Next() {
+		selectSql += ","
+		k := fieldsR.Key().String()
+		v := fieldsR.Value().String()
+		selectSql += fmt.Sprintf(" (%s) as %s ,", v, k)
+	}
+	if strings.Contains(selectSql, ",") {
+		selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
+	}
+	sql := "FROM " + tbl + " WHERE "
+	ot := reflect.TypeOf(o)
+	var DTO reflect.Value
+	for i := 0; i < ot.NumField(); i++ {
+		if ot.Field(i).Name != "PageInfo" {
+			DTO = ov.Field(i)
+		}
+	}
+	dt := DTO.Type()
+	for i := 0; i < dt.NumField(); i++ {
+		tagName := dt.Field(i).Tag.Get(Tag)
+		if containArray(tagName, tags) {
+			continue
+		}
+		switch DTO.Field(i).Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if DTO.Field(i).Int() != 0 {
+				sql += tagName + "=? " + " AND "
+				paramsResult = append(paramsResult, strconv.FormatInt(DTO.Field(i).Int(), 10))
+			}
+		case reflect.String:
+			if DTO.Field(i).String() != "" {
+				sql += tagName + " like ?" + " AND "
+				paramsResult = append(paramsResult, "%"+DTO.Field(i).String()+"%")
+			}
+		case reflect.Float64, reflect.Float32:
+			if DTO.Field(i).Float() != 0 {
+				value := strconv.FormatFloat(DTO.Field(i).Float(), 'g', 15, 64)
+				sql += tagName + "=? AND "
+				paramsResult = append(paramsResult, value)
+			}
+		case reflect.Bool:
+			sql += tagName + "=? AND "
+			paramsResult = append(paramsResult, DTO.Field(i).Bool())
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			if DTO.Field(i).Uint() != 0 {
+				sql += tagName + " =? AND "
+				paramsResult = append(paramsResult, DTO.Field(i).Uint())
+			}
+		}
+	}
+	factorsMap := PageInfo.FieldByName("factorsMap")
+	factorsR := factorsMap.MapRange()
+	for factorsR.Next() {
+		k := factorsR.Key().String()
+		v := factorsR.Value()
+		if strings.TrimSpace(k) != "" {
+			sql += fmt.Sprintf(" %s AND ", k)
+			for i := 0; i < v.Len(); i++ {
+				e := v.Index(i).Elem()
+				switch e.Kind() {
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					paramsResult = append(paramsResult, e.Int())
+				case reflect.String:
+					paramsResult = append(paramsResult, e.String())
+				case reflect.Float64, reflect.Float32:
+					paramsResult = append(paramsResult, e.Float())
+				case reflect.Bool:
+					paramsResult = append(paramsResult, e.Bool())
+				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					paramsResult = append(paramsResult, e.Uint())
+				}
+			}
+		}
+	}
+	if strings.Contains(sql, "AND") {
+		sql = sql[:strings.LastIndex(sql, "AND")]
+	} else {
+		sql += "1=1"
+	}
+	if desc {
+		sql += " order by " + "id" + " desc "
+	} else {
+		sql += " order by id  "
+	}
+	countStr := "SELECT COUNT(1) as total " + sql
+	page := PageInfo.FieldByName("Page").Int()
+	pageSize := PageInfo.FieldByName("PageSize").Int()
+	if page > 0 && pageSize > 0 {
+		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
+	}
+	return selectSql + sql, paramsResult, countStr
+}
+
 // SafeSelectWithFactor 安全的可手动介入查询条件的查询语句生成
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
