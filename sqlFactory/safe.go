@@ -389,8 +389,8 @@ func SafeSelectP(o interface{}, tbl string, desc bool, tags ...string) (sqlStr s
 	PageInfo := ov.FieldByName("PageInfo")
 	fieldsMap := PageInfo.FieldByName("fieldsMap")
 	fieldsR := fieldsMap.MapRange()
+	selectSql += ","
 	for fieldsR.Next() {
-		selectSql += ","
 		k := fieldsR.Key().String()
 		v := fieldsR.Value().String()
 		selectSql += fmt.Sprintf(" (%s) as %s ,", v, k)
