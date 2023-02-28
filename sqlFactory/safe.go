@@ -490,6 +490,8 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 	ordersR := ordersMap.MapRange()
 	if ordersMap.Len() > 0 {
 		sql += " order by "
+	} else {
+		sql += " order by id desc "
 	}
 	for ordersR.Next() {
 		k := ordersR.Key().String()
