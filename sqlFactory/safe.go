@@ -492,8 +492,8 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 		sql += " order by "
 	}
 	for ordersR.Next() {
-		k := factorsR.Key().String()
-		v := factorsR.Value().Bool()
+		k := ordersR.Key().String()
+		v := ordersR.Value().Bool()
 		if v {
 			sql += k + " desc , "
 		} else {
@@ -503,7 +503,12 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 	if ordersMap.Len() > 0 {
 		sql = sql[:strings.LastIndex(sql, ",")]
 	}
+	// 总记录数处理
 	countStr := "SELECT COUNT(1) as total " + sql
+	if groupsMap.Len() > 0 {
+		countStr = fmt.Sprintf("SELECT COUNT(1) FROM (%s) zdz", countStr)
+	}
+	// 分页处理
 	page := PageInfo.FieldByName("Page").Int()
 	pageSize := PageInfo.FieldByName("PageSize").Int()
 	if page > 0 && pageSize > 0 {
