@@ -47,7 +47,7 @@ func (s *SqlxP) SelectMTP(dest interface{}, request interface{}, table string, o
 
 // SelectP 多表查询 列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, otherFiledMap为表字段与sql映射,  factors 为条件和参数的map, tags为需要跳过的字段
 func (s *SqlxP) SelectP(dest interface{}, request interface{}, table string, tags ...string) (err error, total int) {
-	str, params, countStr := SafeSelectP(request, table, true, tags...)
+	str, params, countStr := SafeSelectP(request, table, tags...)
 	err = s.DB.Select(dest, str, params...)
 	s.DB.Get(&total, countStr, params...)
 	return

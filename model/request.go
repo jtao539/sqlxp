@@ -3,6 +3,8 @@ package model
 type SelectParams struct {
 	factorsMap map[string][]interface{}
 	fieldsMap  map[string]string
+	ordersMap  map[string]bool
+	groupsMap  map[string]string
 }
 
 // AddFactors 增加查询条件 str 为sql语句, params 为sql语句参数
@@ -19,6 +21,20 @@ func (s *SelectParams) AddFields(alias string, str string) {
 		s.fieldsMap = make(map[string]string)
 	}
 	s.fieldsMap[alias] = str
+}
+
+func (s *SelectParams) OrderBy(field string, desc bool) {
+	if s.ordersMap == nil {
+		s.ordersMap = make(map[string]bool)
+	}
+	s.ordersMap[field] = desc
+}
+
+func (s *SelectParams) GroupBy(field string) {
+	if s.groupsMap == nil {
+		s.groupsMap = make(map[string]string)
+	}
+	s.groupsMap[field] = ""
 }
 
 func (s *SelectParams) GetFieldsMap() map[string]string {

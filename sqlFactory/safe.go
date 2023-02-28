@@ -382,11 +382,13 @@ func SafeSelectMTP(o interface{}, tbl string, otherFiledMap map[string]string, f
 
 // SafeSelectP [更加安全-防止sql注入] 多表查询语句生成(采用参数化查询，未直接拼接SQL语句), o 为DTO, a 为entity tbl 为表名称, otherFiledMap为表字段与sql映射, factorsMap 为条件和参数的map tags为手动跳过的查找字段
 // 返回值为带占位符的SQL以及对应的参数数组
-func SafeSelectP(o interface{}, tbl string, desc bool, tags ...string) (sqlStr string, params []interface{}, countSql string) {
+func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
+	// 查询表字段
 	selectSql := "SELECT * "
 	ov := reflect.ValueOf(o)
 	PageInfo := ov.FieldByName("PageInfo")
+	// 查询外表字段
 	fieldsMap := PageInfo.FieldByName("fieldsMap")
 	fieldsR := fieldsMap.MapRange()
 	selectSql += ","
@@ -399,6 +401,7 @@ func SafeSelectP(o interface{}, tbl string, desc bool, tags ...string) (sqlStr s
 		selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
 	}
 	sql := "FROM " + tbl + " WHERE "
+	// 查询条件-表字段
 	ot := reflect.TypeOf(o)
 	var DTO reflect.Value
 	for i := 0; i < ot.NumField(); i++ {
@@ -439,6 +442,7 @@ func SafeSelectP(o interface{}, tbl string, desc bool, tags ...string) (sqlStr s
 			}
 		}
 	}
+	// 查询条件-复杂条件
 	factorsMap := PageInfo.FieldByName("factorsMap")
 	factorsR := factorsMap.MapRange()
 	for factorsR.Next() {
@@ -468,10 +472,36 @@ func SafeSelectP(o interface{}, tbl string, desc bool, tags ...string) (sqlStr s
 	} else {
 		sql += "1=1"
 	}
-	if desc {
-		sql += " order by " + "id" + " desc "
-	} else {
-		sql += " order by id  "
+	// 分组处理
+	groupsMap := PageInfo.FieldByName("groupsMap")
+	groupsR := groupsMap.MapRange()
+	if groupsMap.Len() > 0 {
+		sql += " group by "
+	}
+	for groupsR.Next() {
+		k := groupsR.Key().String()
+		sql += k + " , "
+	}
+	if groupsMap.Len() > 0 {
+		sql = sql[:strings.LastIndex(sql, ",")]
+	}
+	// 排序处理
+	ordersMap := PageInfo.FieldByName("ordersMap")
+	ordersR := ordersMap.MapRange()
+	if ordersMap.Len() > 0 {
+		sql += " order by "
+	}
+	for ordersR.Next() {
+		k := factorsR.Key().String()
+		v := factorsR.Value().Bool()
+		if v {
+			sql += k + " desc , "
+		} else {
+			sql += k + " , "
+		}
+	}
+	if ordersMap.Len() > 0 {
+		sql = sql[:strings.LastIndex(sql, ",")]
 	}
 	countStr := "SELECT COUNT(1) as total " + sql
 	page := PageInfo.FieldByName("Page").Int()
