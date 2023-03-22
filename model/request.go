@@ -29,7 +29,7 @@ func (s *SelectParams) OrderBy(field string, desc bool) {
 		s.ordersMap = make(map[string]bool)
 	}
 	if s.ordersArray == nil {
-		s.ordersArray = make([]string, 1)
+		s.ordersArray = make([]string, 0)
 	}
 	s.ordersMap[field] = desc
 	for i := 0; i < len(s.ordersArray); i++ {
@@ -42,7 +42,7 @@ func (s *SelectParams) OrderBy(field string, desc bool) {
 
 func (s *SelectParams) GroupBy(field string) {
 	if s.groupsArray == nil {
-		s.groupsArray = make([]string, 1)
+		s.groupsArray = make([]string, 0)
 	}
 	for i := 0; i < len(s.groupsArray); i++ {
 		if s.groupsArray[i] == field {
