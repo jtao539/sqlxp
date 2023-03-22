@@ -473,41 +473,44 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 		sql += "1=1"
 	}
 	// 分组处理
-	groupsMap := PageInfo.FieldByName("groupsMap")
-	groupsR := groupsMap.MapRange()
-	if groupsMap.Len() > 0 {
+	groupsArray := PageInfo.FieldByName("groupsArray")
+	if groupsArray.Len() > 0 {
 		sql += " group by "
 	}
-	for groupsR.Next() {
-		k := groupsR.Key().String()
-		sql += k + " , "
+	for i := 0; i < groupsArray.Len(); i++ {
+		sql += groupsArray.Index(i).String() + " , "
 	}
-	if groupsMap.Len() > 0 {
+	if groupsArray.Len() > 0 && strings.Contains(sql, ",") {
 		sql = sql[:strings.LastIndex(sql, ",")]
 	}
 	// 排序处理
 	ordersMap := PageInfo.FieldByName("ordersMap")
-	ordersR := ordersMap.MapRange()
 	if ordersMap.Len() > 0 {
 		sql += " order by "
 	} else {
 		sql += " order by id desc "
 	}
-	for ordersR.Next() {
-		k := ordersR.Key().String()
-		v := ordersR.Value().Bool()
-		if v {
-			sql += k + " desc , "
-		} else {
-			sql += k + " , "
+	ordersArray := PageInfo.FieldByName("ordersArray")
+	mapKeys := ordersMap.MapKeys()
+	for i := 0; i < ordersArray.Len(); i++ {
+		for j := 0; j < len(mapKeys); j++ {
+			if k := mapKeys[j]; k.String() == ordersArray.Index(i).String() {
+				v := ordersMap.MapIndex(k).Bool()
+				if v {
+					sql += k.String() + " desc , "
+				} else {
+					sql += k.String() + " , "
+				}
+				break
+			}
 		}
 	}
-	if ordersMap.Len() > 0 {
+	if ordersMap.Len() > 0 && strings.Contains(sql, ",") {
 		sql = sql[:strings.LastIndex(sql, ",")]
 	}
 	// 总记录数处理
 	countStr := "SELECT COUNT(1) as total " + sql
-	if groupsMap.Len() > 0 {
+	if groupsArray.Len() > 0 {
 		countStr = fmt.Sprintf("SELECT COUNT(1) FROM (%s) zdz", countStr)
 	}
 	// 分页处理

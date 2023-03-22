@@ -1,10 +1,11 @@
 package model
 
 type SelectParams struct {
-	factorsMap map[string][]interface{}
-	fieldsMap  map[string]string
-	ordersMap  map[string]bool
-	groupsMap  map[string]string
+	factorsMap  map[string][]interface{}
+	fieldsMap   map[string]string
+	ordersMap   map[string]bool
+	ordersArray []string // 保证顺序
+	groupsArray []string // 保证顺序
 }
 
 // AddFactors 增加查询条件 str 为sql语句, params 为sql语句参数
@@ -27,14 +28,28 @@ func (s *SelectParams) OrderBy(field string, desc bool) {
 	if s.ordersMap == nil {
 		s.ordersMap = make(map[string]bool)
 	}
+	if s.ordersArray == nil {
+		s.ordersArray = make([]string, 1)
+	}
 	s.ordersMap[field] = desc
+	for i := 0; i < len(s.ordersArray); i++ {
+		if s.ordersArray[i] == field {
+			return
+		}
+	}
+	s.ordersArray = append(s.ordersArray, field)
 }
 
 func (s *SelectParams) GroupBy(field string) {
-	if s.groupsMap == nil {
-		s.groupsMap = make(map[string]string)
+	if s.groupsArray == nil {
+		s.groupsArray = make([]string, 1)
 	}
-	s.groupsMap[field] = ""
+	for i := 0; i < len(s.groupsArray); i++ {
+		if s.groupsArray[i] == field {
+			return
+		}
+	}
+	s.groupsArray = append(s.groupsArray, field)
 }
 
 func (s *SelectParams) GetFieldsMap() map[string]string {
