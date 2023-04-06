@@ -522,6 +522,109 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 	return selectSql + sql, paramsResult, countStr
 }
 
+// SafeSelectPN [更加安全-防止sql注入] 多表查询语句生成(采用参数化查询，未直接拼接SQL语句), o 为DTO, a 为entity tbl 为表名称, otherFiledMap为表字段与sql映射, factorsMap 为条件和参数的map
+// 返回值为带占位符的SQL以及对应的参数数组
+func SafeSelectE(o interface{}, tbl string) (sqlStr string, params []interface{}, countSql string) {
+	var paramsResult []interface{}
+	// 查询表字段
+	selectSql := "SELECT * "
+	ov := reflect.ValueOf(o)
+	PageInfo := ov.FieldByName("PageInfo")
+	// 查询外表字段
+	fieldsMap := PageInfo.FieldByName("fieldsMap")
+	fieldsR := fieldsMap.MapRange()
+	selectSql += ","
+	for fieldsR.Next() {
+		k := fieldsR.Key().String()
+		v := fieldsR.Value().String()
+		selectSql += fmt.Sprintf(" (%s) as %s ,", v, k)
+	}
+	if strings.Contains(selectSql, ",") {
+		selectSql = selectSql[:strings.LastIndex(selectSql, ",")]
+	}
+	sql := "FROM " + tbl + " WHERE "
+	// 查询条件-表字段 : 此版功能暂时舍弃
+	// todo
+	// 查询条件-复杂条件
+	factorsMap := PageInfo.FieldByName("factorsMap")
+	factorsR := factorsMap.MapRange()
+	for factorsR.Next() {
+		k := factorsR.Key().String()
+		v := factorsR.Value()
+		if strings.TrimSpace(k) != "" {
+			sql += fmt.Sprintf(" %s AND ", k)
+			for i := 0; i < v.Len(); i++ {
+				e := v.Index(i).Elem()
+				switch e.Kind() {
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					paramsResult = append(paramsResult, e.Int())
+				case reflect.String:
+					paramsResult = append(paramsResult, e.String())
+				case reflect.Float64, reflect.Float32:
+					paramsResult = append(paramsResult, e.Float())
+				case reflect.Bool:
+					paramsResult = append(paramsResult, e.Bool())
+				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					paramsResult = append(paramsResult, e.Uint())
+				}
+			}
+		}
+	}
+	if strings.Contains(sql, "AND") {
+		sql = sql[:strings.LastIndex(sql, "AND")]
+	} else {
+		sql += "1=1"
+	}
+	// 分组处理
+	groupsArray := PageInfo.FieldByName("groupsArray")
+	if groupsArray.Len() > 0 {
+		sql += " group by "
+	}
+	for i := 0; i < groupsArray.Len(); i++ {
+		sql += groupsArray.Index(i).String() + " , "
+	}
+	if groupsArray.Len() > 0 && strings.Contains(sql, ",") {
+		sql = sql[:strings.LastIndex(sql, ",")]
+	}
+	// 排序处理
+	ordersMap := PageInfo.FieldByName("ordersMap")
+	if ordersMap.Len() > 0 {
+		sql += " order by "
+	} else {
+		sql += " order by id desc "
+	}
+	ordersArray := PageInfo.FieldByName("ordersArray")
+	mapKeys := ordersMap.MapKeys()
+	for i := 0; i < ordersArray.Len(); i++ {
+		for j := 0; j < len(mapKeys); j++ {
+			if k := mapKeys[j]; k.String() == ordersArray.Index(i).String() {
+				v := ordersMap.MapIndex(k).Bool()
+				if v {
+					sql += k.String() + " desc , "
+				} else {
+					sql += k.String() + " , "
+				}
+				break
+			}
+		}
+	}
+	if ordersMap.Len() > 0 && strings.Contains(sql, ",") {
+		sql = sql[:strings.LastIndex(sql, ",")]
+	}
+	// 总记录数处理
+	countStr := "SELECT COUNT(1) as total " + sql
+	if groupsArray.Len() > 0 {
+		countStr = fmt.Sprintf("SELECT COUNT(1) FROM (%s) zdz", countStr)
+	}
+	// 分页处理
+	page := PageInfo.FieldByName("Page").Int()
+	pageSize := PageInfo.FieldByName("PageSize").Int()
+	if page > 0 && pageSize > 0 {
+		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
+	}
+	return selectSql + sql, paramsResult, countStr
+}
+
 // SafeSelectWithFactor 安全的可手动介入查询条件的查询语句生成
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectWithFactor(o interface{}, tbl string, factors []string, tags ...string) (sqlStr string, params []interface{}, countSql string) {
