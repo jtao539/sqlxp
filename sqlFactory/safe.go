@@ -217,12 +217,12 @@ func SafeSelectOrder(o interface{}, tbl string, desc bool, orderField string, ta
 	if strings.TrimSpace(orderField) != "" {
 		field = orderField
 	}
+	countStr := strings.ReplaceAll(sql, "*", " COUNT(1) as total ")
 	if desc {
 		sql += " order by " + field + " desc "
 	} else {
 		sql += " order by " + field
 	}
-	countStr := strings.ReplaceAll(sql, "*", " COUNT(1) as total ")
 	page := PageInfo.FieldByName("Page").Int()
 	pageSize := PageInfo.FieldByName("PageSize").Int()
 	if page > 0 && pageSize > 0 {
@@ -288,12 +288,12 @@ func SafeSelectMT(o interface{}, tbl string, otherFiledMap map[string]string, fa
 	} else {
 		sql += "1=1"
 	}
+	countStr := "SELECT COUNT(1) as total " + sql
 	if desc {
 		sql += " order by " + "id" + " desc "
 	} else {
 		sql += " order by id  "
 	}
-	countStr := "SELECT COUNT(1) as total " + sql
 	page := PageInfo.FieldByName("Page").Int()
 	pageSize := PageInfo.FieldByName("PageSize").Int()
 	if page > 0 && pageSize > 0 {
@@ -366,12 +366,12 @@ func SafeSelectMTP(o interface{}, tbl string, otherFiledMap map[string]string, f
 	} else {
 		sql += "1=1"
 	}
+	countStr := "SELECT COUNT(1) as total " + sql
 	if desc {
 		sql += " order by " + "id" + " desc "
 	} else {
 		sql += " order by id  "
 	}
-	countStr := "SELECT COUNT(1) as total " + sql
 	page := PageInfo.FieldByName("Page").Int()
 	pageSize := PageInfo.FieldByName("PageSize").Int()
 	if page > 0 && pageSize > 0 {
@@ -472,6 +472,8 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 	} else {
 		sql += "1=1"
 	}
+	// 总记录数处理
+	countStr := "SELECT COUNT(1) as total " + sql
 	// 分组处理
 	groupsArray := PageInfo.FieldByName("groupsArray")
 	if groupsArray.Len() > 0 {
@@ -507,11 +509,6 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 	}
 	if ordersMap.Len() > 0 && strings.Contains(sql, ",") {
 		sql = sql[:strings.LastIndex(sql, ",")]
-	}
-	// 总记录数处理
-	countStr := "SELECT COUNT(1) as total " + sql
-	if groupsArray.Len() > 0 {
-		countStr = fmt.Sprintf("SELECT COUNT(1) FROM (%s) zdz", countStr)
 	}
 	// 分页处理
 	page := PageInfo.FieldByName("Page").Int()
@@ -575,6 +572,8 @@ func SafeSelectE(o interface{}, tbl string) (sqlStr string, params []interface{}
 	} else {
 		sql += "1=1"
 	}
+	// 总记录数处理
+	countStr := "SELECT COUNT(1) as total " + sql
 	// 分组处理
 	groupsArray := PageInfo.FieldByName("groupsArray")
 	if groupsArray.Len() > 0 {
@@ -610,11 +609,6 @@ func SafeSelectE(o interface{}, tbl string) (sqlStr string, params []interface{}
 	}
 	if ordersMap.Len() > 0 && strings.Contains(sql, ",") {
 		sql = sql[:strings.LastIndex(sql, ",")]
-	}
-	// 总记录数处理
-	countStr := "SELECT COUNT(1) as total " + sql
-	if groupsArray.Len() > 0 {
-		countStr = fmt.Sprintf("SELECT COUNT(1) FROM (%s) zdz", countStr)
 	}
 	// 分页处理
 	page := PageInfo.FieldByName("Page").Int()
