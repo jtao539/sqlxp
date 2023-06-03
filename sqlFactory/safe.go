@@ -522,6 +522,14 @@ func SafeSelectP(o interface{}, tbl string, tags ...string) (sqlStr string, para
 // SafeSelectPN [更加安全-防止sql注入] 多表查询语句生成(采用参数化查询，未直接拼接SQL语句), o 为DTO, a 为entity tbl 为表名称, otherFiledMap为表字段与sql映射, factorsMap 为条件和参数的map
 // 返回值为带占位符的SQL以及对应的参数数组
 func SafeSelectE(o interface{}, tbl string) (sqlStr string, params []interface{}, countSql string) {
+	return safeSelect(o, tbl, "mysql")
+}
+
+func SafeSelectPQ(o interface{}, tbl string) (sqlStr string, params []interface{}, countSql string) {
+	return safeSelect(o, tbl, "pq")
+}
+
+func safeSelect(o interface{}, tbl string, dbType string) (sqlStr string, params []interface{}, countSql string) {
 	var paramsResult []interface{}
 	// 查询表字段
 	selectSql := "SELECT * "
@@ -613,8 +621,10 @@ func SafeSelectE(o interface{}, tbl string) (sqlStr string, params []interface{}
 	// 分页处理
 	page := PageInfo.FieldByName("Page").Int()
 	pageSize := PageInfo.FieldByName("PageSize").Int()
-	if page > 0 && pageSize > 0 {
+	if page > 0 && pageSize > 0 && dbType == "mysql" {
 		sql += " limit " + strconv.FormatInt((page-1)*pageSize, 10) + " , " + strconv.FormatInt(pageSize, 10)
+	} else if page > 0 && pageSize > 0 && dbType == "pq" {
+		sql += " limit " + strconv.FormatInt(pageSize, 10) + " offset " + strconv.FormatInt((page-1)*pageSize, 10)
 	}
 	return selectSql + sql, paramsResult, countStr
 }

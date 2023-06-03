@@ -61,6 +61,14 @@ func (s *SqlxP) SelectE(dest interface{}, request interface{}, table string) (er
 	return
 }
 
+// SelectEPQ SelectE PQ版本
+func (s *SqlxP) SelectEPQ(dest interface{}, request interface{}, table string) (err error, total int) {
+	str, params, countStr := SafeSelectPQ(request, table)
+	err = s.DB.Select(dest, str, params...)
+	s.DB.Get(&total, countStr, params...)
+	return
+}
+
 // SelectMTOrder 多表查询 列表查找, dest为要查找的数据类型数组, request为查询条件结构体, table 为表名称, otherFiledMap为表字段与sql映射, factors 为sql条件, tags为需要跳过的字段
 func (s *SqlxP) SelectMTOrder(dest interface{}, request interface{}, table string, otherFiledMap map[string]string, factors []string, tags ...string) (err error, total int) {
 	str, params, countStr := SafeSelectMT(request, table, otherFiledMap, factors, false, tags...)
